@@ -4,6 +4,7 @@ pipeline {
     environment {
         IMAGE_NAME = 'cake-shop'
         IMAGE_TAG = "${env.BUILD_NUMBER}"
+        PATH = "/Users/js/.docker/bin:/usr/local/bin:${env.PATH}"
     }
 
     options {
