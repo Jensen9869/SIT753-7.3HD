@@ -71,14 +71,29 @@ pipeline {
                         bandit -r . -f json -o /app/reports/bandit.json \
                             --exclude ./cakehome/tests || true
                 '''
+
                 sh '''
                     docker run --rm ${IMAGE_NAME}:${IMAGE_TAG} \
-                        bandit -r . -ll --exclude ./cakehome/tests || true
+                        bandit -r . -l --exclude ./cakehome/tests || true
                 '''
 
-                sh 'trivy image --severity HIGH,CRITICAL --format json \
-                        -o reports/trivy.json ${IMAGE_NAME}:${IMAGE_TAG} || true'
-                sh 'trivy image --severity HIGH,CRITICAL ${IMAGE_NAME}:${IMAGE_TAG} || true'
+                sh '''
+                    docker run --rm \
+                        -v /var/run/docker.sock:/var/run/docker.sock \
+                        -v $WORKSPACE/reports:/reports \
+                        aquasec/trivy:latest image \
+                            --severity HIGH,CRITICAL \
+                            --format json -o /reports/trivy.json \
+                            ${IMAGE_NAME}:${IMAGE_TAG} || true
+                '''
+
+                sh '''
+                    docker run --rm \
+                        -v /var/run/docker.sock:/var/run/docker.sock \
+                        aquasec/trivy:latest image \
+                            --severity HIGH,CRITICAL \
+                            ${IMAGE_NAME}:${IMAGE_TAG} || true
+                '''
             }
             post {
                 always {
