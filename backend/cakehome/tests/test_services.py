@@ -62,8 +62,7 @@ class TestStock:
         assert check_stock(3, 3) is True
 
     def test_not_enough(self):
-        with pytest.raises(ValueError):
-            check_stock(2, 3)
+        assert check_stock(2, 3) is False
 
     def test_rejects_zero_request(self):
         with pytest.raises(ValueError):

@@ -46,9 +46,6 @@ def calculate_delivery_fee(subtotal, distance_km):
 def check_stock(available, requested):
     if requested < 1:
         raise ValueError("Requested quantity must be at least 1")
-    if available < requested:
-        raise ValueError(f"Insufficient stock: {available} available, {requested} requested")
-
     return available >= requested
 
 def can_transition(current, target):
