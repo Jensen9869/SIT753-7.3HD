@@ -10,6 +10,8 @@ from cakehome.services import (
     can_transition,
 )
 
+from cakehome.models import Cake, Category
+
 
 class TestItemPrice:
     def test_small_is_base_price(self):
@@ -105,3 +107,27 @@ class TestOrderTotal:
     def test_rejects_empty_order(self):
         with pytest.raises(ValueError):
             calculate_order_total([], 5)
+
+@pytest.mark.django_db
+class TestCake:
+    def test_in_stock_true(self):
+        cat = Category.objects.create(name="Sponge", slug="sponge")
+        cake = Cake.objects.create(name="Vanilla", price=Decimal("40.00"),
+                                   category=cat, stock=5, is_available=True)
+        assert cake.in_stock is True
+
+    def test_out_of_stock_when_zero(self):
+        cat = Category.objects.create(name="Tart", slug="tart")
+        cake = Cake.objects.create(name="Lemon", price=Decimal("35.00"),
+                                   category=cat, stock=0, is_available=True)
+        assert cake.in_stock is False
+
+    def test_unavailable_is_not_in_stock(self):
+        cat = Category.objects.create(name="Mousse", slug="mousse")
+        cake = Cake.objects.create(name="Choc", price=Decimal("50.00"),
+                                   category=cat, stock=10, is_available=False)
+        assert cake.in_stock is False
+
+    def test_str(self):
+        cat = Category.objects.create(name="Cheesecake", slug="cheesecake")
+        assert str(cat) == "Cheesecake"
