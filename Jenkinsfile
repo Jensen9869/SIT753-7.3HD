@@ -17,6 +17,7 @@ pipeline {
             steps {
                 sh 'docker build -t ${IMAGE_NAME}:${IMAGE_TAG} -t ${IMAGE_NAME}:latest .'
                 sh 'docker images ${IMAGE_NAME}'
+                sh 'docker build --provenance=false --sbom=false -t ${IMAGE_NAME}:${IMAGE_TAG} -t ${IMAGE_NAME}:latest .'
             }
         }
 
@@ -32,7 +33,6 @@ pipeline {
                             --cov=. --cov-report=xml:/app/reports/coverage.xml \
                             --cov-fail-under=80
                 '''
-                sh "sed -i.bak 's|<source>/app</source>|<source>backend</source>|' reports/coverage.xml || true"
             }
             post {
                 always {
@@ -92,6 +92,18 @@ pipeline {
                         -v /var/run/docker.sock:/var/run/docker.sock \
                         aquasec/trivy:latest image \
                             --severity HIGH,CRITICAL \
+                            ${IMAGE_NAME}:${IMAGE_TAG} || true
+                '''
+                                
+                sh '''
+                    docker run --rm \
+                        -v /var/run/docker.sock:/var/run/docker.sock \
+                        aquasec/trivy:latest image \
+                            --severity HIGH,CRITICAL \
+                            --ignore-unfixed \
+                            --pkg-types library \
+                            --scanners vuln \
+                            --exit-code 0 \
                             ${IMAGE_NAME}:${IMAGE_TAG} || true
                 '''
             }

@@ -11,3 +11,4 @@ reports/
 .env
 .DS_Store
 .idea/
+.scannerwork/
