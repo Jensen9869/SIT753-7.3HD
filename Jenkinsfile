@@ -32,10 +32,30 @@ pipeline {
                             --cov=cakehome --cov-report=xml:/app/reports/coverage.xml \
                             --cov-fail-under=80
                 '''
+                sh "sed -i.bak 's|<source>/app</source>|<source>backend</source>|' reports/coverage.xml || true"
             }
             post {
                 always {
                     junit 'reports/junit.xml'
+                }
+            }
+        }
+
+        stage('Code Quality') {
+            steps {
+                script {
+                    def scannerHome = tool 'SonarScanner'
+                    withSonarQubeEnv('SonarQube') {
+                        sh "${scannerHome}/bin/sonar-scanner"
+                    }
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
                 }
             }
         }
