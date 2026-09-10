@@ -181,6 +181,40 @@ pipeline {
             }
         }
 
+        stage('Monitoring') {
+            steps {
+                sh 'docker compose -f docker-compose.monitoring.yml -p cakeshop-monitoring up -d'
+
+                sh '''
+                    for i in $(seq 1 20); do
+                        if curl -fs http://localhost:9090/-/ready > /dev/null 2>&1; then
+                            echo "Prometheus is ready"
+                            break
+                        fi
+                        sleep 3
+                    done
+                    sleep 20
+                '''
+
+                sh '''
+                    curl -fs "http://localhost:9090/api/v1/query?query=up{job=\\"cake-shop-prod\\"}" \
+                        | tee reports/prometheus-targets.json
+                    echo
+                '''
+
+                sh 'curl -fs http://localhost:9090/api/v1/rules | tee reports/alert-rules.json'
+                sh 'echo'
+
+                sh 'curl -fs http://localhost:8002/metrics | grep django_http_requests_total_by_method_total | head -3'
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'reports/prometheus-targets.json,reports/alert-rules.json',
+                                     allowEmptyArchive: true
+                }
+            }
+        }
+
     }
     post {
         always {
