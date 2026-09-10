@@ -117,7 +117,7 @@ pipeline {
 
         stage('Deploy to Staging') {
             steps {
-                sh 'docker compose -f docker-compose.staging.yml -p cakeshop-staging down --remove-orphans || true'
+                sh 'docker compose -f docker-compose.staging.yml -p cakeshop-staging down -v --remove-orphans || true'
                 sh 'IMAGE_TAG=${IMAGE_TAG} docker compose -f docker-compose.staging.yml -p cakeshop-staging up -d'
 
                 sh '''

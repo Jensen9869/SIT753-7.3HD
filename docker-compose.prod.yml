@@ -4,7 +4,7 @@ services:
     environment:
       POSTGRES_DB: cakeshop_prod
       POSTGRES_USER: cakeshop
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-prodpassword}
+      POSTGRES_PASSWORD: prodpassword
     volumes:
       - prod_pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -20,10 +20,10 @@ services:
     ports:
       - "8002:8000"
     environment:
-      DATABASE_URL: postgres://cakeshop:stagingpassword@db:5432/cakeshop_staging
+      DATABASE_URL: postgres://cakeshop:prodpassword@db:5432/cakeshop_prod
       DEBUG: "False"
-      SECRET_KEY: staging-key-not-for-production
-      ENVIRONMENT: staging
+      SECRET_KEY: prod-key-not-for-production
+      ENVIRONMENT: production
       ALLOWED_HOSTS: "localhost,127.0.0.1,web,0.0.0.0,host.docker.internal"
     restart: unless-stopped
     depends_on:

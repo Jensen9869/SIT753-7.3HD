@@ -2,9 +2,9 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: cakeshop_prod
+      POSTGRES_DB: cakeshop_staging
       POSTGRES_USER: cakeshop
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-prodpassword}
+      POSTGRES_PASSWORD: stagingpassword
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U cakeshop"]
       interval: 5s
