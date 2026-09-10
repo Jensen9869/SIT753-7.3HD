@@ -114,9 +114,46 @@ pipeline {
                 }
             }
         }
+
+        stage('Deploy to Staging') {
+            steps {
+                sh 'docker compose -f docker-compose.staging.yml -p cakeshop-staging down --remove-orphans || true'
+                sh 'IMAGE_TAG=${IMAGE_TAG} docker compose -f docker-compose.staging.yml -p cakeshop-staging up -d'
+
+                sh '''
+                    for i in $(seq 1 30); do
+                        if curl -fs http://localhost:8001/health/ > /dev/null 2>&1; then
+                            echo "Staging is healthy after ${i} attempts"
+                            exit 0
+                        fi
+                        echo "Waiting for staging... (${i}/30)"
+                        sleep 2
+                    done
+                    echo "Staging failed to become healthy"
+                    docker compose -f docker-compose.staging.yml -p cakeshop-staging logs web --tail 50
+                    exit 1
+                '''
+            }
+        }
+
+        stage('Smoke Test Staging') {
+            steps {
+                sh 'curl -fs http://localhost:8001/health/ | tee reports/staging-health.json'
+                sh 'echo'
+                sh 'curl -fs http://localhost:8001/api/cakes/ > /dev/null && echo "API responding"'
+                sh 'curl -fs http://localhost:8001/metrics > /dev/null && echo "Metrics exposed"'
+            }
+        }
+
     }
     post {
         always {
+            sh '''
+                docker images ${IMAGE_NAME} --format "{{.Tag}}" \
+                    | grep -E "^[0-9]+$" | sort -rn | tail -n +4 \
+                    | xargs -I {} docker rmi ${IMAGE_NAME}:{} 2>/dev/null || true
+            '''
+
             sh 'docker image prune -f || true'
         }
     }

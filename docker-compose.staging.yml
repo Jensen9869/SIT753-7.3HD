@@ -1,0 +1,27 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: cakeshop_staging
+      POSTGRES_USER: cakeshop
+      POSTGRES_PASSWORD: stagingpassword
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cakeshop"]
+      interval: 5s
+      retries: 5
+
+  web:
+    image: cake-shop:${IMAGE_TAG:-latest}
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2"
+    ports:
+      - "8001:8000"
+    environment:
+      DATABASE_URL: postgres://cakeshop:stagingpassword@db:5432/cakeshop_staging
+      DEBUG: "False"
+      SECRET_KEY: staging-key-not-for-production
+      ENVIRONMENT: staging
+    depends_on:
+      db:
+        condition: service_healthy
