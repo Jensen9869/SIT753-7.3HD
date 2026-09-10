@@ -2,9 +2,11 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: cakeshop_staging
-      POSTGRES_USER: cakeshop
-      POSTGRES_PASSWORD: stagingpassword
+      DATABASE_URL: ...
+      DEBUG: "False"
+      SECRET_KEY: ...
+      ENVIRONMENT: production
+      ALLOWED_HOSTS: "localhost,127.0.0.1,web,0.0.0.0,host.docker.internal"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U cakeshop"]
       interval: 5s
