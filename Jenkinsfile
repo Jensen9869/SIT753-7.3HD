@@ -145,6 +145,42 @@ pipeline {
             }
         }
 
+        stage('Release') {
+            steps {
+                script {
+                    def version = "v1.0.${env.BUILD_NUMBER}"
+                    echo "Releasing ${version}"
+
+                    sh "docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:${version}"
+                    sh "docker images ${IMAGE_NAME}"
+
+                    sh "IMAGE_TAG=${version} docker compose -f docker-compose.prod.yml -p cakeshop-prod up -d"
+
+                    sh '''
+                        for i in $(seq 1 30); do
+                            if curl -fs http://localhost:8002/health/ > /dev/null 2>&1; then
+                                echo "Production is healthy after ${i} attempts"
+                                exit 0
+                            fi
+                            echo "Waiting for production... (${i}/30)"
+                            sleep 2
+                        done
+                        echo "Production failed to become healthy"
+                        docker compose -f docker-compose.prod.yml -p cakeshop-prod logs web --tail 50
+                        exit 1
+                    '''
+
+                    sh "echo '${version}' > reports/released-version.txt"
+                    sh "curl -fs http://localhost:8002/health/"
+                }
+            }
+            post {
+                success {
+                    archiveArtifacts artifacts: 'reports/released-version.txt'
+                }
+            }
+        }
+
     }
     post {
         always {
