@@ -15,14 +15,20 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import include, path
 
-from cakehome import views
+from cakehome import views, web
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path("admin/", admin.site.urls),
+
+    # customer-facing pages
+    path("", web.menu, name="menu"),
+    path("orders/", web.order_list, name="order-list"),
+    path("orders/<int:pk>/", web.order_detail, name="order-detail"),
+
+    # operations
     path("health/", views.health, name="health"),
     path("api/", include("cakehome.urls")),
-
     path("", include("django_prometheus.urls")),
 ]

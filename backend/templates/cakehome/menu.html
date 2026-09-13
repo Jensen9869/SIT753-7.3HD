@@ -1,0 +1,125 @@
+{% extends "cakehome/base.html" %}
+
+{% block title %}Cakes — Fournée{% endblock %}
+
+{% block content %}
+  <h1>Today's cakes</h1>
+  <p class="standfirst">
+    Everything is baked the morning of delivery. Choose a size, tell us where
+    you are, and we'll bring it to you.
+  </p>
+
+  {% if error %}
+    <p class="notice">{{ error }}</p>
+  {% endif %}
+
+  {% if cakes %}
+    <form method="post" action="{% url 'menu' %}">
+      {% csrf_token %}
+
+      <div class="menu">
+        {% for cake in cakes %}
+          <div class="dish">
+            <div class="dish-head">
+              <span>{{ cake.name }}</span>
+              <span class="leader"></span>
+              <span class="price">${{ cake.price }}</span>
+            </div>
+            {% if cake.description %}<p>{{ cake.description }}</p>{% endif %}
+            <div class="dish-controls">
+              <label for="size-{{ cake.id }}" class="sr-only">Size</label>
+              <select name="size_{{ cake.id }}" id="size-{{ cake.id }}"
+                      data-price="{{ cake.price }}">
+                <option value="small">Small — 6 slices</option>
+                <option value="medium">Medium — 10 slices</option>
+                <option value="large">Large — 16 slices</option>
+              </select>
+              <label for="qty-{{ cake.id }}" class="sr-only">Quantity</label>
+              <input type="number" name="qty_{{ cake.id }}" id="qty-{{ cake.id }}"
+                     value="0" min="0" max="{{ cake.stock }}"
+                     data-cake="{{ cake.id }}" data-price="{{ cake.price }}">
+              <span class="stock{% if cake.stock < 3 %} low{% endif %}">
+                {{ cake.stock }} left today
+              </span>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="docket">
+        <h2 style="margin-top:0">Where should we bring it?</h2>
+
+        <div class="fields-2">
+          <div class="field">
+            <label for="customer_name">Your name</label>
+            <input type="text" name="customer_name" id="customer_name"
+                   value="{{ form_data.customer_name|default:'' }}" required>
+          </div>
+          <div class="field">
+            <label for="customer_email">Email</label>
+            <input type="email" name="customer_email" id="customer_email"
+                   value="{{ form_data.customer_email|default:'' }}" required>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="delivery_address">Delivery address</label>
+          <textarea name="delivery_address" id="delivery_address" required
+          >{{ form_data.delivery_address|default:'' }}</textarea>
+        </div>
+
+        <div class="field">
+          <label for="delivery_distance_km">Distance from the shop, in kilometres</label>
+          <input type="number" name="delivery_distance_km" id="delivery_distance_km"
+                 step="0.1" min="0" max="40" required
+                 value="{{ form_data.delivery_distance_km|default:'5' }}">
+        </div>
+
+        <div class="totals">
+          <div><span>Cakes</span><span id="t-subtotal">$0.00</span></div>
+          <div><span id="t-delivery-label">Delivery</span><span id="t-delivery">$0.00</span></div>
+          <div class="grand"><span>Total</span><span id="t-total">$0.00</span></div>
+        </div>
+
+        <div class="actions">
+          <button type="submit">Place order</button>
+        </div>
+      </div>
+    </form>
+  {% else %}
+    <p class="empty">Nothing is on the board today. Check back tomorrow morning.</p>
+  {% endif %}
+
+<script>
+  // Mirrors the pricing rules in cakehome/services.py so the docket can show a
+  // total before the order is sent. The server recalculates on submit.
+  const SIZE = { small: 1.0, medium: 1.5, large: 2.2 };
+  const FREE_OVER = 100, BASE_FEE = 10, PER_KM = 1;
+
+  const money = n => "$" + n.toFixed(2);
+
+  function recalc() {
+    let subtotal = 0;
+    document.querySelectorAll('input[type="number"][data-cake]').forEach(qty => {
+      const n = parseInt(qty.value, 10) || 0;
+      if (!n) return;
+      const size = document.getElementById("size-" + qty.dataset.cake).value;
+      subtotal += parseFloat(qty.dataset.price) * SIZE[size] * n;
+    });
+
+    const km = parseFloat(document.getElementById("delivery_distance_km").value) || 0;
+    const free = subtotal >= FREE_OVER;
+    const delivery = (subtotal === 0 || free) ? 0 : BASE_FEE + PER_KM * km;
+
+    document.getElementById("t-subtotal").textContent = money(subtotal);
+    document.getElementById("t-delivery").textContent = money(delivery);
+    document.getElementById("t-delivery-label").textContent =
+      free ? "Delivery — free over $100" : "Delivery";
+    document.getElementById("t-total").textContent = money(subtotal + delivery);
+  }
+
+  document.querySelectorAll("select, input[type='number']")
+    .forEach(el => el.addEventListener("input", recalc));
+  recalc();
+</script>
+{% endblock %}

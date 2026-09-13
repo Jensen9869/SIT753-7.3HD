@@ -1,0 +1,254 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en-au">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Fournée{% endblock %}</title>
+<style>
+  :root {
+    --ground:    #e9ede1;   /* pistachio cream */
+    --surface:   #fcfbf7;   /* royal icing */
+    --ink:       #3b2b25;   /* cocoa */
+    --muted:     #8b7c72;   /* mocha */
+    --accent:    #b32949;   /* raspberry */
+    --rule:      #cbd5bc;   /* sage hairline */
+    --serif:     Georgia, "Iowan Old Style", "Times New Roman", serif;
+    --sans:      -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                 "Helvetica Neue", Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.55;
+  }
+
+  a { color: var(--accent); }
+
+  .masthead {
+    border-bottom: 1px solid var(--rule);
+    background: var(--surface);
+  }
+  .masthead .inner {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 1.1rem 1.5rem;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .wordmark {
+    font-family: var(--serif);
+    font-size: 1.5rem;
+    letter-spacing: 0.01em;
+    text-decoration: none;
+    color: var(--ink);
+  }
+  .masthead nav a {
+    margin-left: 1.2rem;
+    font-size: 0.9rem;
+    text-decoration: none;
+    color: var(--muted);
+  }
+  .masthead nav a:hover,
+  .masthead nav a[aria-current="page"] { color: var(--accent); }
+
+  main {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+  }
+
+  h1 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 2rem;
+    line-height: 1.2;
+    margin: 0 0 0.4rem;
+  }
+  h2 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 1.25rem;
+    margin: 2.5rem 0 0.75rem;
+  }
+  .standfirst {
+    color: var(--muted);
+    max-width: 34rem;
+    margin: 0 0 2rem;
+  }
+
+  /* ---- the menu ---- */
+  .menu { border-top: 1px solid var(--rule); }
+  .dish {
+    border-bottom: 1px solid var(--rule);
+    padding: 1.1rem 0;
+  }
+  .dish-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    font-family: var(--serif);
+    font-size: 1.1rem;
+  }
+  .dish-head .leader {
+    flex: 1;
+    border-bottom: 1px dotted var(--rule);
+    transform: translateY(-0.25rem);
+  }
+  .dish-head .price { font-variant-numeric: tabular-nums; }
+  .dish p {
+    margin: 0.3rem 0 0.7rem;
+    color: var(--muted);
+    font-size: 0.92rem;
+    max-width: 32rem;
+  }
+  .dish-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+  .stock {
+    color: var(--muted);
+    font-size: 0.82rem;
+    margin-left: auto;
+  }
+  .stock.low { color: var(--accent); }
+
+  /* ---- form controls ---- */
+  label { font-size: 0.85rem; color: var(--muted); display: block; }
+  select, input[type="text"], input[type="email"], input[type="number"], textarea {
+    font: inherit;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    padding: 0.4rem 0.5rem;
+  }
+  select:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  input[type="number"] { width: 4.5rem; text-align: right; }
+  textarea { width: 100%; min-height: 4rem; resize: vertical; }
+
+  .field { margin-bottom: 1rem; }
+  .field input[type="text"],
+  .field input[type="email"] { width: 100%; }
+  .fields-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+  button {
+    font: inherit;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 2px;
+    padding: 0.55rem 1.3rem;
+    cursor: pointer;
+  }
+  button:hover { background: #96203d; }
+
+  /* ---- docket ---- */
+  .docket {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    padding: 1.5rem;
+    margin-top: 2.5rem;
+  }
+  .totals { margin: 1.5rem 0 0; font-variant-numeric: tabular-nums; }
+  .totals div {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.25rem 0;
+    color: var(--muted);
+    font-size: 0.92rem;
+  }
+  .totals .grand {
+    border-top: 1px solid var(--rule);
+    margin-top: 0.4rem;
+    padding-top: 0.6rem;
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 1.2rem;
+  }
+  .actions { margin-top: 1.25rem; text-align: right; }
+
+  .notice {
+    border-left: 3px solid var(--accent);
+    background: var(--surface);
+    padding: 0.8rem 1rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.92rem;
+  }
+
+  .empty { color: var(--muted); }
+
+  /* ---- order status ---- */
+  .track { list-style: none; margin: 1.5rem 0; padding: 0; }
+  .track li {
+    padding: 0.45rem 0 0.45rem 1.6rem;
+    position: relative;
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+  .track li::before {
+    content: "";
+    position: absolute;
+    left: 0.25rem;
+    top: 0.95rem;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--rule);
+  }
+  .track li.done { color: var(--ink); }
+  .track li.done::before { background: var(--accent); }
+  .track li.cancelled { color: var(--accent); }
+
+  table.lines { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+  table.lines th {
+    text-align: left;
+    font-weight: 400;
+    font-size: 0.82rem;
+    color: var(--muted);
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 0.4rem;
+  }
+  table.lines td {
+    padding: 0.55rem 0;
+    border-bottom: 1px solid var(--rule);
+    font-size: 0.95rem;
+  }
+  table.lines td:last-child,
+  table.lines th:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+
+  @media (max-width: 30rem) {
+    .fields-2 { grid-template-columns: 1fr; }
+    h1 { font-size: 1.6rem; }
+  }
+</style>
+</head>
+<body>
+  <header class="masthead">
+    <div class="inner">
+      <a class="wordmark" href="{% url 'menu' %}">Fournée</a>
+      <nav>
+        <a href="{% url 'menu' %}"{% if page == 'menu' %} aria-current="page"{% endif %}>Cakes</a>
+        <a href="{% url 'order-list' %}"{% if page == 'orders' %} aria-current="page"{% endif %}>Orders</a>
+      </nav>
+    </div>
+  </header>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

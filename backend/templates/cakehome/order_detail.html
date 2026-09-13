@@ -1,0 +1,50 @@
+{% extends "cakehome/base.html" %}
+
+{% block title %}Order #{{ order.id }} — Fournée{% endblock %}
+
+{% block content %}
+  {% if just_placed %}
+    <p class="notice">
+      Thanks {{ order.customer_name }} — your order is in. We've sent a copy to
+      {{ order.customer_email }}.
+    </p>
+  {% endif %}
+
+  <h1>Order #{{ order.id }}</h1>
+  <p class="standfirst">
+    Placed {{ order.created_at|date:"j F Y, g:i a" }} ·
+    delivering to {{ order.delivery_address }}
+  </p>
+
+  <h2>Where it's up to</h2>
+  <ul class="track">
+    {% for step in track %}
+      <li class="{% if step.done %}done{% endif %}{% if step.cancelled %} cancelled{% endif %}">
+        {{ step.label }}
+      </li>
+    {% endfor %}
+  </ul>
+
+  <h2>What you ordered</h2>
+  <table class="lines">
+    <thead>
+      <tr><th>Cake</th><th>Size</th><th>Qty</th><th>Line total</th></tr>
+    </thead>
+    <tbody>
+      {% for line in order.items.all %}
+        <tr>
+          <td>{{ line.cake.name }}</td>
+          <td>{{ line.size }}</td>
+          <td>{{ line.quantity }}</td>
+          <td>${{ line.line_total }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="totals">
+    <div><span>Cakes</span><span>${{ order.subtotal }}</span></div>
+    <div><span>Delivery, {{ order.delivery_distance_km }} km</span><span>${{ order.delivery_fee }}</span></div>
+    <div class="grand"><span>Total</span><span>${{ order.total }}</span></div>
+  </div>
+{% endblock %}

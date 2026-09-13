@@ -1,0 +1,30 @@
+{% extends "cakehome/base.html" %}
+
+{% block title %}Orders — Fournée{% endblock %}
+
+{% block content %}
+  <h1>Orders</h1>
+  <p class="standfirst">Every order placed through the shop, newest first.</p>
+
+  {% if orders %}
+    <table class="lines">
+      <thead>
+        <tr><th>Order</th><th>Customer</th><th>Status</th><th>Total</th></tr>
+      </thead>
+      <tbody>
+        {% for order in orders %}
+          <tr>
+            <td><a href="{% url 'order-detail' order.id %}">#{{ order.id }}</a></td>
+            <td>{{ order.customer_name }}</td>
+            <td>{{ order.get_status_display }}</td>
+            <td>${{ order.total }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="empty">
+      No orders yet. <a href="{% url 'menu' %}">Have a look at today's cakes.</a>
+    </p>
+  {% endif %}
+{% endblock %}
