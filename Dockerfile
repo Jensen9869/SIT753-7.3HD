@@ -1,5 +1,5 @@
 
-# ---------- 构建阶段：只在这里装编译工具 ----------
+
 FROM python:3.13-slim AS builder
 
 WORKDIR /app
@@ -13,16 +13,19 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir --prefix=/install "setuptools>=78.1.1" && \
     pip install --no-cache-dir --prefix=/install -r requirements.txt
 
-# ---------- 运行阶段：只带运行时需要的东西 ----------
+    
 FROM python:3.13-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends \
         curl libpq5 && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /install /usr/local
+RUN python -m pip uninstall -y pip
+
 COPY backend/ .
 
 RUN useradd -m appuser && chown -R appuser /app

@@ -15,9 +15,8 @@ pipeline {
     stages {
         stage('Build'){
             steps {
-                sh 'docker build -t ${IMAGE_NAME}:${IMAGE_TAG} -t ${IMAGE_NAME}:latest .'
-                sh 'docker images ${IMAGE_NAME}'
                 sh 'docker build --provenance=false --sbom=false -t ${IMAGE_NAME}:${IMAGE_TAG} -t ${IMAGE_NAME}:latest .'
+                sh 'docker images ${IMAGE_NAME}'
             }
         }
 
@@ -64,55 +63,58 @@ pipeline {
 
         stage('Security') {
             steps {
-                sh 'mkdir -p reports'
+                sh 'mkdir -p reports $HOME/.cache/trivy'
 
                 sh '''
                     docker run --rm \
                         -v $WORKSPACE/reports:/app/reports \
                         ${IMAGE_NAME}:${IMAGE_TAG} \
-                        bandit -r . -f json -o /app/reports/bandit.json \
-                            --exclude ./cakehome/tests || true
+                        bandit -r . --exclude ./cakehome/tests \
+                            -f json -o /app/reports/bandit.json --exit-zero
                 '''
 
                 sh '''
                     docker run --rm ${IMAGE_NAME}:${IMAGE_TAG} \
-                        bandit -r . -l --exclude ./cakehome/tests || true
+                        bandit -r . --exclude ./cakehome/tests -lll
                 '''
 
                 sh '''
                     docker run --rm \
                         -v /var/run/docker.sock:/var/run/docker.sock \
+                        -v $HOME/.cache/trivy:/root/.cache/trivy \
                         -v $WORKSPACE/reports:/reports \
                         aquasec/trivy:latest image \
                             --severity HIGH,CRITICAL \
                             --format json -o /reports/trivy.json \
-                            ${IMAGE_NAME}:${IMAGE_TAG} || true
+                            --exit-code 0 \
+                            ${IMAGE_NAME}:${IMAGE_TAG}
                 '''
 
                 sh '''
                     docker run --rm \
                         -v /var/run/docker.sock:/var/run/docker.sock \
+                        -v $HOME/.cache/trivy:/root/.cache/trivy \
                         aquasec/trivy:latest image \
                             --severity HIGH,CRITICAL \
-                            ${IMAGE_NAME}:${IMAGE_TAG} || true
+                            --exit-code 0 \
+                            ${IMAGE_NAME}:${IMAGE_TAG}
                 '''
-                                
+
                 sh '''
                     docker run --rm \
                         -v /var/run/docker.sock:/var/run/docker.sock \
+                        -v $HOME/.cache/trivy:/root/.cache/trivy \
                         aquasec/trivy:latest image \
                             --severity HIGH,CRITICAL \
                             --ignore-unfixed \
-                            --pkg-types library \
-                            --scanners vuln \
-                            --exit-code 0 \
-                            ${IMAGE_NAME}:${IMAGE_TAG} || true
+                            --exit-code 1 \
+                            ${IMAGE_NAME}:${IMAGE_TAG}
                 '''
             }
             post {
                 always {
                     archiveArtifacts artifacts: 'reports/bandit.json,reports/trivy.json',
-                                     allowEmptyArchive: true
+                                    allowEmptyArchive: true
                 }
             }
         }
@@ -122,7 +124,6 @@ pipeline {
                 sh 'docker compose -f docker-compose.staging.yml -p cakeshop-staging down -v --remove-orphans || true'
                 sh 'IMAGE_TAG=${IMAGE_TAG} docker compose -f docker-compose.staging.yml -p cakeshop-staging up -d'
 
-                // 1. 先确认新容器真的在跑，而不是启动后立刻退出
                 sh '''
                     sleep 8
                     running=$(docker compose -f docker-compose.staging.yml -p cakeshop-staging ps -q web --status running)
@@ -135,7 +136,6 @@ pipeline {
                     echo "Staging container is up: $running"
                 '''
 
-                // 2. 再等应用就绪
                 sh '''
                     ok=0
                     for i in $(seq 1 30); do
