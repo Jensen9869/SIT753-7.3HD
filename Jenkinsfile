@@ -122,18 +122,36 @@ pipeline {
                 sh 'docker compose -f docker-compose.staging.yml -p cakeshop-staging down -v --remove-orphans || true'
                 sh 'IMAGE_TAG=${IMAGE_TAG} docker compose -f docker-compose.staging.yml -p cakeshop-staging up -d'
 
+                // 1. 先确认新容器真的在跑，而不是启动后立刻退出
                 sh '''
+                    sleep 8
+                    running=$(docker compose -f docker-compose.staging.yml -p cakeshop-staging ps -q web --status running)
+                    if [ -z "$running" ]; then
+                        echo "The staging web container is not running"
+                        docker compose -f docker-compose.staging.yml -p cakeshop-staging ps -a
+                        docker compose -f docker-compose.staging.yml -p cakeshop-staging logs web --tail 50
+                        exit 1
+                    fi
+                    echo "Staging container is up: $running"
+                '''
+
+                // 2. 再等应用就绪
+                sh '''
+                    ok=0
                     for i in $(seq 1 30); do
                         if curl -fs http://localhost:8001/health/ > /dev/null 2>&1; then
                             echo "Staging is healthy after ${i} attempts"
-                            exit 0
+                            ok=1
+                            break
                         fi
                         echo "Waiting for staging... (${i}/30)"
                         sleep 2
                     done
-                    echo "Staging failed to become healthy"
-                    docker compose -f docker-compose.staging.yml -p cakeshop-staging logs web --tail 50
-                    exit 1
+                    if [ "$ok" -ne 1 ]; then
+                        echo "Staging failed to become healthy"
+                        docker compose -f docker-compose.staging.yml -p cakeshop-staging logs web --tail 50
+                        exit 1
+                    fi
                 '''
             }
         }
