@@ -30,7 +30,8 @@ pipeline {
                         ${IMAGE_NAME}:${IMAGE_TAG} \
                         pytest cakehome/tests \
                             --junitxml=/app/reports/junit.xml \
-                            --cov=. --cov-report=xml:/app/reports/coverage.xml \
+                            --cov=cakehome \
+                            --cov-report=xml:/app/reports/coverage.xml \
                             --cov-fail-under=80
                 '''
                 sh "sed -i.bak 's|<source>/app</source>||' reports/coverage.xml || true"
